@@ -2,30 +2,38 @@
   <div class="container">
     <div class="form-box">
       <el-form ref="formRef" :rules="rules" :model="form" label-width="140px">
-        <el-form-item label="班级名称" prop="name">
-          <el-input v-model="form.name"></el-input>
+        <el-form-item label="班级名称" prop="clazzName">
+          <el-input v-model="form.clazzName"></el-input>
         </el-form-item>
         <el-form-item label="班级所属学院" prop="region">
-          <el-select v-model="form.region" placeholder="请选择" class="select-input">
-            <el-option key="小明" label="小明" value="小明"></el-option>
-            <el-option key="小红" label="小红" value="小红"></el-option>
-            <el-option key="小白" label="小白" value="小白"></el-option>
+          <el-select v-model="form.did" placeholder="请选择" class="select-input">
+            <el-option :key="index"
+                       :label="dep.departmentName"
+                       :value="dep.uuid"
+                       v-for="(dep,index) in departmentInfo"
+                       @click="selectDep(dep.uuid,dep.departmentName)"
+            ></el-option>
           </el-select>
         </el-form-item>
           <el-form-item label="班级所属专业" prop="region">
-            <el-select v-model="form.region" placeholder="请选择" class="select-input">
-              <el-option key="小明" label="小明" value="小明"></el-option>
-              <el-option key="小红" label="小红" value="小红"></el-option>
-              <el-option key="小白" label="小白" value="小白"></el-option>
+            <el-select v-model="form.mid" placeholder="请选择" class="select-input">
+              <el-option key=""
+                         :label="major.majorName"
+                         :value="major.uuid"
+                         v-for="major in majorInfo"
+                         @click="selectMajor(major.majorName)"
+              ></el-option>
             </el-select>
           </el-form-item>
         <el-form-item label="班级图标">
           <el-upload
               class="avatar-uploader"
-              action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"
+              :action="iconUrl.url"
+              :auto-upload="true"
               :show-file-list="true"
               :on-success="handleAvatarSuccess"
               :before-upload="beforeAvatarUpload"
+              :headers="myHeader"
               :limit="1"
           >
             <img v-if="imageUrl" :src="imageUrl" class="avatar" />
@@ -48,13 +56,45 @@
 import {onMounted, reactive, ref} from 'vue';
 import {ElMessage, ElNotification, FormInstance, FormRules} from 'element-plus';
 import type { UploadProps } from 'element-plus'
+import {majorList} from "../../../api/Manager/PublicApi";
+import {distinctDep} from "../../../api/Manager/PublicApi";
+import {manager} from "../../../store/manager";
+import {classCreate} from "../../../api/Manager/ClassManageApi";
 
+//icon upload url
+const iconUrl = reactive({
+  url:"api/passUse/uploadIcon"
+})
+
+//upload icon ref
+const upload = ref()
+
+//major scroll info
+const majorInfo = ref([])
+
+//department scroll info
+const departmentInfo = ref([])
+
+//manager information
+const managerInfo = manager()
+
+//icon upload request header
+const myHeader = reactive({
+  token:managerInfo.token
+})
+
+//create class icon url
 const imageUrl = ref('')
+
+//select dep get id
+const depId = ref('')
 
 const handleAvatarSuccess: UploadProps['onSuccess'] = (
     response,
     uploadFile
 ) => {
+  form.icon = response.data
+  alert(form.icon)
   imageUrl.value = URL.createObjectURL(uploadFile.raw!)
 }
 
@@ -69,20 +109,25 @@ const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
   return true
 }
 const rules: FormRules = {
-  name: [{ required: true, message: '请输入表单名称', trigger: 'blur' }],
+  clazzName: [{ required: true, message: '请输入班级名称', trigger: 'blur' }],
+  mid: [{ required: true, message: '请选择学校', trigger: 'blur' }],
+  did: [{ required: true, message: '请选择学院', trigger: 'blur' }],
 };
+//form ref
 const formRef = ref<FormInstance>();
+
+//create class form
 const form = reactive({
-  name: '',
-  region: '',
-  date1: '',
-  date2: '',
-  delivery: true,
-  type: ['小明'],
-  resource: '小红',
-  desc: '',
-  options: [],
+  clazzName: '',
+  major: '',
+  mid:'',
+  did:'',
+  department: '',
+  icon:'',
+  school:'',
+  desc:''
 });
+
 // 提交
 const onSubmit = (formEl: FormInstance | undefined) => {
   // 表单校验
@@ -90,7 +135,9 @@ const onSubmit = (formEl: FormInstance | undefined) => {
   formEl.validate((valid) => {
     if (valid) {
       console.log(form);
-      ElMessage.success('提交成功！');
+      classCreate(form).then(response=>{
+        ElMessage.success(response.data.data);
+      })
     } else {
       return false;
     }
@@ -102,12 +149,40 @@ const onReset = (formEl: FormInstance | undefined) => {
   formEl.resetFields();
 };
 
+//select department to choice major
+const selectDep = (dep:string,depName:string)=>{
+  if (dep === ""){
+    ElMessage.warning({
+      message:'请选择学院'
+    })
+  }else {
+    depId.value = dep
+    form.department = depName
+    //major scroll request
+    majorList(depId.value).then(response=>{
+      majorInfo.value = response.data.data
+    })
+  }
+}
+
+//select major
+const selectMajor = (majorName:string)=>{
+  form.major = majorName
+}
+
+
 onMounted(()=>{
   ElNotification({
     title:'请开始课程创建',
     message:'please start create course',
     type:'success'
   })
+  //@ts-ignore
+  form.school = managerInfo.schoolUid
+    //department scroll request
+    distinctDep(managerInfo.schoolUid).then(response=>{
+      departmentInfo.value = response.data.data
+    })
 })
 </script>
 <style scoped>

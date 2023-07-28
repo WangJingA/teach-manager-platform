@@ -147,7 +147,8 @@ const submitForm = (formEl: FormInstance | undefined) => {
           }
       })
 		} else {
-			ElMessage.error('登录成功');
+      loading.value = false
+			ElMessage.error('信息不正确');
 			return false;
 		}
 	});

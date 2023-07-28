@@ -2,8 +2,8 @@
   <div>
     <div class="container">
       <div class="handle-box">
-        <el-input v-model="query.name" placeholder="班级口令" class="handle-input mr10"></el-input>
-        <el-select v-model="query.address" placeholder="专业" class="handle-select mr10">
+        <el-input v-model="query.clazzName" placeholder="班级口令" class="handle-input mr10"></el-input>
+        <el-select v-model="query.majorId" placeholder="专业" class="handle-select mr10">
           <el-option key="1" label="广东省" value="广东省"></el-option>
           <el-option key="2" label="湖南省" value="湖南省"></el-option>
         </el-select>
@@ -88,12 +88,18 @@
 </template>
 
 <script setup lang="ts" name="basetable">
-import { ref, reactive } from 'vue';
+import {ref, reactive, onMounted} from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Delete, Edit, Search, Plus } from '@element-plus/icons-vue';
 import { fetchData } from '../../../api';
 import router from "../../../router";
+import {distinctDep, majorList} from "../../../api/Manager/PublicApi";
+import {manager} from "../../../store/manager";
 
+//manager information
+const managerInfo = manager()
+
+//Table data
 interface TableItem {
   id: number;
   name: string;
@@ -104,13 +110,16 @@ interface TableItem {
 }
 
 const query = reactive({
-  address: '',
-  name: '',
+  depId: '',
+  clazzName: '',
+  clazzIcon:'',
+  majorId:'',
   pageIndex: 1,
   pageSize: 10
 });
 const tableData = ref<TableItem[]>([]);
 const pageTotal = ref(0);
+
 // 获取表格数据
 const getData = () => {
   fetchData().then(res => {
@@ -162,6 +171,8 @@ const saveEdit = () => {
   tableData.value[idx].name = form.name;
   tableData.value[idx].address = form.address;
 };
+
+
 </script>
 
 <style scoped>

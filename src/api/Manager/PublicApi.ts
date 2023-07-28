@@ -48,7 +48,7 @@ export const classList = (majorUid:any)=>{
  */
 export const majorList = (departmentUid:any)=>{
     return request({
-        url:'passUse/classList?departmentUid='+departmentUid,
+        url:'passUse/majorList?departmentUid='+departmentUid,
         method:"post",
     })
 }

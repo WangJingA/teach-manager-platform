@@ -142,6 +142,7 @@ const showExam = () =>{
   height: 200px;
   margin: 20px;
   padding: 20px;
+  margin-top: 20px;
 }
 .demo-rate-block {
   padding: 30px 0;

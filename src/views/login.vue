@@ -141,8 +141,9 @@ const submitForm = (formEl: FormInstance | undefined) => {
               }
             })
           }else {
+            loading.value = false
             ElMessage.warning({
-              message:response.data.msg
+              message:"登录信息出错，请仔细查看登录信息"
             })
           }
       })

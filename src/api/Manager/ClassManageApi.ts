@@ -11,3 +11,27 @@ export const classCreate = (data:any)=>{
         data:data
     })
 }
+
+/**
+ * 班级列表
+ * @param data
+ */
+export const classList = (data:any)=>{
+    return request({
+        url:'/manager/listClass',
+        method:'post',
+        data:data
+    })
+}
+
+/**
+ * 更新
+ * @param data
+ */
+export const editClass = (data:any)=>{
+    return request({
+        url:'/manager/editClass',
+        method:'post',
+        data:data
+    })
+}

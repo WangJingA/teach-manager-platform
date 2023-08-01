@@ -1,26 +1,29 @@
 <template>
   <div class="container">
     <div class="handle-box">
-      <el-input  placeholder="班级口令" class="handle-input mr10"></el-input>
-      <el-input  placeholder="班级名" class="handle-input mr10" style="margin-left: 20px"></el-input>
+      <el-input  placeholder="班级口令" class="handle-input mr10" v-model="queryForm.uuid"></el-input>
+      <el-input  placeholder="班级名" class="handle-input mr10" style="margin-left: 20px" v-model="queryForm.clazzName"></el-input>
       <el-button type="primary" :icon="Search" @click="handleSearch" class="search-button">搜索</el-button>
     </div>
     <el-card>
       <el-row gutter="20">
         <el-col :span="7">
-          <p>班级名：</p>
-          <p>班级所属专业：</p>
-          <p>创建人：</p>
+          <p>班级名：{{$route.params.className}}</p>
+          <p>班级所属专业：{{$route.params.classMajor}}</p>
+          <p>创建人：{{$route.params.classCreateMan}}</p>
         </el-col>
         <el-col :span="7">
-          <p>班级所属学校：</p>
-          <p>班级口令：</p>
-          <p>创建人身份：</p>
+          <p>班级所属学校：{{$route.params.classSchool}}</p>
+          <p>班级口令：{{$route.params.uuid}}</p>
+          <p>创建人身份：学校管理员</p>
         </el-col>
         <el-col :span="7">
-          <p>班级所属学院：</p>
-          <p>班级人数：</p>
-          <p>班级状态：</p>
+          <p>班级所属学院：{{$route.params.classDepartment}}</p>
+          <p>班级人数：{{$route.params.classPersonNumber}}</p>
+          <p>班级状态：
+            <span v-if="$route.params.status == 0">已创建</span>
+            <span v-if="$route.params.status == 1">销毁</span>
+          </p>
         </el-col>
         <el-col :span="3">
           <el-button type="primary" class="addClassPerson">添加成员</el-button>
@@ -38,6 +41,10 @@
 <script setup lang="ts">
 import Schart from 'vue-schart';
 import {Search} from "@element-plus/icons-vue";
+import {reactive,ref} from "vue";
+import {classList} from "../../../api/Manager/ClassManageApi";
+import {manager} from "../../../store/manager";
+
 const options3 = {
   type: 'pie',
   title: {
@@ -54,8 +61,38 @@ const options3 = {
     }
   ]
 };
+const managerInfo = manager()
+//query form
+const queryForm = reactive({
+  uuid:'',
+  clazzName:'',
+  school:managerInfo.schoolUid,
+  page:1,
+  pageSize:10,
+})
+//Table data
+interface TableItem {
+  uuid: string;
+  className: string;
+  classMajor: string;
+  classSchool: string;
+  classDepartment: string;
+  classDepartmentUid: string;
+  classMajorUid: string;
+  classCreateMan: string;
+  classStatus: number;
+  classIcon: string;
+  classDesc: string;
+  CreateTime:string
+}
+//query get data
+const tableData = ref<TableItem[]>([]);
 const handleSearch = ()=>{
-
+  if (queryForm.clazzName != '' || queryForm.uuid != '') {
+    classList(queryForm).then(response => {
+      tableData.value = response.data.data
+    })
+  }
 }
 </script>
 

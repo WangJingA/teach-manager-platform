@@ -53,7 +53,7 @@
         <el-pagination
             background
             layout="total, prev, pager, next"
-            :current-page="query.pageIndex"
+            :current-page="query.page"
             :page-size="query.pageSize"
             :total="pageTotal"
             @current-change="handlePageChange"

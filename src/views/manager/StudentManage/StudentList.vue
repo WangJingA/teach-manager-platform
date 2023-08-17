@@ -1,7 +1,7 @@
 <template>
   <div>
-    <div class="container">
-      <div class="handle-box">
+    <div class="container" v-loading="loading">
+      <div class="handle-box" >
         <el-input v-model="query.name" placeholder="学生口令" class="handle-input mr10" ></el-input>
         <el-select v-model="query.address" placeholder="专业" class="handle-select mr10">
           <el-option key="1" label="广东省" value="广东省"></el-option>
@@ -16,37 +16,41 @@
         <el-button type="primary" @click="exportXlsx" class="search-button">导出Excel</el-button>
         <!--批量导入-->
           <el-upload
-              action="#"
+              ref="uploadInstance"
+              :action="url.stuImport"
               :limit="1"
+              :auto-upload="true"
               accept=".xlsx, .xls"
               :show-file-list="false"
               :before-upload="beforeUpload"
-              :http-request="handleMany"
+              :on-success="handleAvatarSuccess"
+              :headers="myHeader"
+              name="file"
           >
             <el-button class="mr10 search-button "  type="success" >批量导入</el-button>
           </el-upload>
-          <el-link href="/template.xlsx" target="_blank" class="search-button">
+          <el-link href="/studentTemplate.xlsx" target="_blank" class="search-button">
             <el-button class="mr10 search-button "  type="success"> 下载模板</el-button>
           </el-link>
 
 
       </div>
       <el-table :data="tableData" border class="table" ref="multipleTable" header-cell-class-name="table-header">
-        <el-table-column prop="id" label="口令" width="220" align="center"></el-table-column>
-        <el-table-column prop="name" label="学生名"></el-table-column>
+        <el-table-column prop="uuid" label="口令" width="220" align="center"></el-table-column>
+        <el-table-column prop="sudentName" label="学生名"></el-table-column>
         <el-table-column label="学生专业">
-          <template #default="scope">￥{{ scope.row.money }}</template>
+          <template #default="scope">{{ scope.row.sudentMajor }}</template>
         </el-table-column>
-        <el-table-column prop="address" label="班级"></el-table-column>
-        <el-table-column prop="name" label="手机号"></el-table-column>
-        <el-table-column prop="address" label="邮箱"></el-table-column>
+        <el-table-column prop="sudentClass" label="班级"></el-table-column>
+        <el-table-column prop="sudentPhone" label="手机号"></el-table-column>
+        <el-table-column prop="sudentMail" label="邮箱"></el-table-column>
         <el-table-column label="头像" align="center">
           <template #default="scope">
             <el-image
                 class="table-td-thumb"
-                :src="scope.row.thumb"
+                :src="scope.row.sudentIcon"
                 :z-index="10"
-                :preview-src-list="[scope.row.thumb]"
+                :preview-src-list="[scope.row.sudentIcon]"
                 preview-teleported
             >
             </el-image>
@@ -62,7 +66,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="date" label="创建时间"></el-table-column>
+        <el-table-column prop="createTime" label="创建时间"></el-table-column>
         <el-table-column label="操作" width="220" align="center">
           <template #default="scope">
             <el-button text :icon="Edit" @click="handleEdit(scope.$index, scope.row)" v-permiss="15">
@@ -111,21 +115,47 @@
 
 <script setup lang="ts" name="basetable">
 import { ref, reactive } from 'vue';
-import {ElMessage, ElMessageBox, UploadProps} from 'element-plus';
+import {ElMessage, ElMessageBox, UploadInstance, UploadProps} from 'element-plus';
 import { Delete, Edit, Search, Plus } from '@element-plus/icons-vue';
 import { fetchData } from '../../../api';
 import * as XLSX from "xlsx";
 import router from "../../../router";
+import {manager} from "../../../store/manager";
+import {importStuList} from "../../../api/Manager/StudentManageApi";
 
+const uploadInstance = ref<UploadInstance>()
+/**
+ * loading 加载
+ */
+const loading = ref(false)
+const svg = `
+        <path class="path" d="
+          M 30 15
+          L 28 17
+          M 25.61 25.61
+          A 15 15, 0, 0, 1, 15 30
+          A 15 15, 0, 1, 1, 27.99 7.5
+          L 15 15
+        " style="stroke-width: 4px; fill: rgba(0, 0, 0, 0)"/>`
+const managerInfo = manager()
 interface TableItem {
-  id: number;
-  name: string;
-  money: string;
-  state: string;
-  date: string;
-  address: string;
+  uuid: number;
+  sudentName: string;
+  sudentSchoolNumber:string,
+  sudentClass: string ;
+  sudentMajor: string;
+  sudentPhone: string;
+  sudentMail:string,
+  sudentCollege:string,
+  sudentDepartment:string,
+  sudentIcon:string,
+  sudentSex:string,
+  createTime:string,
+  updateTime:string
 }
-
+const url = reactive({
+  stuImport:"/api/manager/importStuList"
+})
 const query = reactive({
   address: '',
   name: '',
@@ -134,6 +164,10 @@ const query = reactive({
 });
 const tableData = ref<TableItem[]>([]);
 const pageTotal = ref(0);
+//icon upload request header
+const myHeader = reactive({
+  token:managerInfo.token
+})
 // 获取表格数据
 const getData = () => {
   fetchData().then(res => {
@@ -183,13 +217,15 @@ const handleEdit = (index: number, row: any) => {
 const saveEdit = () => {
   editVisible.value = false;
   ElMessage.success(`修改第 ${idx + 1} 行成功`);
-  tableData.value[idx].name = form.name;
-  tableData.value[idx].address = form.address;
+
 };
 //批量导入--start
 const importList = ref<any>([]);
+const fileRaw = ref()
 const beforeUpload: UploadProps['beforeUpload'] = async (rawFile) => {
+  fileRaw.value = rawFile
   importList.value = await analysisExcel(rawFile);
+  loading.value = true
   return true;
 };
 const analysisExcel = (file: any) => {
@@ -207,21 +243,6 @@ const analysisExcel = (file: any) => {
     };
     reader.readAsBinaryString(file);
   });
-};
-
-const handleMany = async () => {
-  // 把数据传给服务器后获取最新列表，这里只是示例，不做请求
-  const list = importList.value.map((item: any, index: number) => {
-    return {
-      id: index,
-      name: item['姓名'],
-      sno: item['学号'],
-      class: item['班级'],
-      age: item['年龄'],
-      sex: item['性别'],
-    };
-  });
-  tableData.value.push(...list);
 };
 //批量导入--end
 //学生详情
@@ -241,6 +262,29 @@ const exportXlsx = () => {
   XLSX.utils.book_append_sheet(new_workbook, WorkSheet, '第一页');
   XLSX.writeFile(new_workbook, `表格.xlsx`);
 };
+const handleAvatarSuccess: UploadProps['onSuccess'] = (
+    response,
+    uploadFile
+) => {
+  loading.value = false
+    setTimeout(() => {
+      // 把数据传给服务器后获取最新列表，这里只是示例，不做请求
+      const list = importList.value.map((item: any, index: number) => {
+        return {
+          sudentName: item['姓名'],
+          sudentSchoolNumber: item['学号'],
+          sudentClass: item['班级'],
+          sudentMajor: item['专业'],
+          sudentDepartment: item['学院'],
+          sudentPhone: item['手机号'],
+          sudentMail: item['邮箱'],
+          sudentSex: item['性别'],
+        };
+      });
+      tableData.value.push(...list);
+      ElMessage.success("导入成功")
+    }, 1500)
+}
 //导出--end
 const addStudent = ()=>{
   router.push("/StudentCreate")

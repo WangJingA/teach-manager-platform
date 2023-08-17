@@ -26,8 +26,8 @@
           </p>
         </el-col>
         <el-col :span="3">
-          <el-button type="primary" class="addClassPerson">添加成员</el-button>
-          <el-button type="primary" class="addClassPerson">添加课程</el-button>
+          <el-button type="primary" class="addClassPerson" @click="addPerson">添加成员</el-button>
+          <el-button type="primary" class="addClassPerson" @click="addCourse">添加课程</el-button>
         </el-col>
       </el-row>
     </el-card>
@@ -44,6 +44,7 @@ import {Search} from "@element-plus/icons-vue";
 import {reactive,ref} from "vue";
 import {classList} from "../../../api/Manager/ClassManageApi";
 import {manager} from "../../../store/manager";
+import router from "../../../router";
 
 const options3 = {
   type: 'pie',
@@ -93,6 +94,15 @@ const handleSearch = ()=>{
       tableData.value = response.data.data
     })
   }
+}
+//添加班级成员
+const addPerson = ()=>{
+  router.push("/StudentCreate")
+}
+
+//添加班级课程
+const addCourse= ()=>{
+
 }
 </script>
 

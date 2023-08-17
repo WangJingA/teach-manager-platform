@@ -255,6 +255,10 @@ const saveEdit = () => {
 //专业下拉列表数据
 const majlist = ref([])
 //学院下拉列表数据
+interface depType{
+  uuid:string,
+  departmentName:string
+}
 const deplist = ref([])
     //学院选择
 const depSelect = (uuid:string,depName:string)=>{
